@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>みんなでビンゴ ＋ ルーレット</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #022b1b;
+      color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1100px;
+      width: 100%;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h2 {
+      margin: 0 0 10px;
+    }
+    section {
+      margin-bottom: 24px;
+      padding: 16px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.4);
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    input[type="text"],
+    input[type="number"] {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: none;
+      margin-bottom: 8px;
+      width: 100%;
+      max-width: 260px;
+      font-size: 14px;
+    }
+    button {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 8px;
+      margin-top: 4px;
+    }
+    .btn-primary {
+      background: #c0392b;
+      color: #fff;
+    }
+    .btn-secondary {
+      background: #7f8c8d;
+      color: #fff;
+    }
+    #hostSection,
+    #playerSection {
+      display: none;
+    }
+    .flex {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .card {
+      padding: 10px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      flex: 1 1 260px;
+    }
+    .small {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    ul {
+      margin: 6px 0 0;
+      padding-left: 18px;
+      font-size: 14px;
+    }
+
+    /* ビンゴカード */
+    .bingo-card {
+      border-collapse: collapse;
+      margin: 0 auto;
+      background: #fff;
+    }
+    .bingo-card td {
+      width: 60px;
+      height: 60px;
+      border: 1px solid #ccc;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 22px;
+      color: #333;
+      transition: background 0.2s, color 0.2s, transform 0.2s;
+    }
+    .bingo-card td.marked {
+      background: #f39c12;
+      color: #fff;
+      font-weight: bold;
+    }
+    .bingo-card td.hit-cell {
+      animation: cellHit 0.7s ease-out;
+    }
+    @keyframes cellHit {
+      0% {
+        background: #27ae60;
+        color: #fff;
+        transform: scale(1.15);
+      }
+      100% {
+        background: #f39c12;
+        color: #fff;
+        transform: scale(1);
+      }
+    }
+
+    /* ルーレット */
+    #wheelCanvas {
+      background: #022b1b;
+      border-radius: 12px;
+      display: block;
+      margin: 0 auto;
+    }
+    .center {
+      text-align: center;
+    }
+
+    /* ホスト画面の大きい数字 */
+    .big-number {
+      font-size: 64px;
+      font-weight: 700;
+      margin: 4px 0 8px;
+    }
+
+    /* 数字ハイライト演出 */
+    .highlight-number {
+      animation: numberFlash 0.7s ease-out;
+    }
+    @keyframes numberFlash {
+      0% {
+        transform: scale(1);
+        color: #f5f5f5;
+        text-shadow: none;
+      }
+      30% {
+        transform: scale(1.4);
+        color: #f1c40f;
+        text-shadow: 0 0 18px rgba(241, 196, 15, 0.9);
+      }
+      100% {
+        transform: scale(1);
+        color: #f5f5f5;
+        text-shadow: none;
+      }
+    }
+
+    /* 特殊演出オーバーレイ（0,12,19,21） */
+    #secretOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      cursor: pointer;
+    }
+    #secretOverlay.show {
+      display: flex;
+      animation: overlayFade 0.3s ease-out;
+    }
+    .secret-content {
+      text-align: center;
+      padding: 32px 40px;
+      border-radius: 24px;
+      background: radial-gradient(circle at top, #f1c40f, #c0392b 70%, #8e44ad 100%);
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+      animation: secretPop 0.45s ease-out;
+      max-width: 700px;
+      width: 90%;
+    }
+    .secret-number {
+      font-size: 120px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      color: #ffffff;
+      text-shadow: 0 0 25px rgba(0, 0, 0, 0.9);
+    }
+    .secret-title {
+      font-size: 56px;
+      letter-spacing: 4px;
+      margin-bottom: 8px;
+      color: #fdfdfd;
+      text-shadow: 0 0 18px rgba(0, 0, 0, 0.9);
+    }
+    .secret-text {
+      font-size: 22px;
+      color: #fdfdfd;
+      margin-bottom: 10px;
+    }
+    .secret-sub {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    @keyframes overlayFade {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes secretPop {
+      0%   { transform: scale(0.6) rotate(-4deg); }
+      60%  { transform: scale(1.05) rotate(2deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>みんなでビンゴ ＋ ルーレット</h1>
+
+    <!-- 0 / 12 / 19 / 21 用オーバーレイ -->
+    <div id="secretOverlay">
+      <div class="secret-content" id="secretContent">
+        <div class="secret-number" id="secretNumber">0</div>
+        <div class="secret-title" id="secretTitle">SECRET!</div>
+        <div class="secret-text" id="secretMessage">特別イベント発生！</div>
+        <div class="secret-sub">※ 画面をタップ / クリックして閉じることもできます</div>
+      </div>
+    </div>
+
+    <!-- ルーム作成 / 参加 -->
+    <section id="setupSection">
+      <div class="flex">
+        <div class="card">
+          <h2>幹事（ホスト）用</h2>
+          <label>
+            ルームID（例: party2025）
+            <input type="text" id="hostRoomId" placeholder="room id" />
+          </label>
+          <label>
+            最小の数字（例: 0）
+            <input type="number" id="minNumber" value="0" />
+          </label>
+          <label>
+            最大の数字（例: 25）
+            <input type="number" id="maxNumber" value="25" />
+          </label>
+          <button class="btn-primary" id="createRoomBtn">ルームを作成</button>
+          <p class="small">
+            ※ 数字の種類は少なくとも 25 個必要です（5×5 ビンゴ用）
+          </p>
+        </div>
+
+        <div class="card">
+          <h2>参加者（プレイヤー）用</h2>
+          <label>
+            ルームID
+            <input type="text" id="playerRoomId" placeholder="hostから聞いたID" />
+          </label>
+          <label>
+            名前（ニックネーム）
+            <input type="text" id="playerName" placeholder="たろう など" />
+          </label>
+          <label>
+            復帰用シークレット番号（任意）
+            <input type="text" id="playerSecret" placeholder="例: 1234（空でもOK）" />
+          </label>
+          <p class="small">
+            ※ 一度入室したらこの番号をメモしておくと、落ちても同じカードで復帰しやすくなります。
+          </p>
+          <button class="btn-primary" id="joinRoomBtn">ルームに参加</button>
+          <p class="small">※ 参加者はスマホやPCのブラウザからこれを開きます</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ホスト画面 -->
+    <section id="hostSection">
+      <h2>ホスト画面</h2>
+      <p>
+        ルームID: <strong id="hostRoomLabel"></strong><br />
+        数字範囲: <span id="hostRangeLabel"></span>
+      </p>
+      <div class="flex">
+        <div class="card">
+          <h3>ルーレット ＆ 抽選</h3>
+          <canvas id="wheelCanvas" width="400" height="400"></canvas>
+          <div class="center" style="margin-top:8px;">
+            <button class="btn-primary" id="wheelStartBtn">スタート</button>
+            <button class="btn-secondary" id="wheelStopBtn">ストップ</button>
+          </div>
+          <div class="center" style="margin-top:12px;">
+            <div>止まった数字：</div>
+            <div id="hostCurrentNumber" class="big-number">--</div>
+            <button class="btn-secondary" id="wheelClearBtn">
+              この数字をルーレットから削除
+            </button>
+          </div>
+          <p class="small center" style="margin-top:8px;">
+            出た数字の履歴: <span id="hostDrawnList">まだありません</span>
+          </p>
+          <p class="small center">
+            ※ ルーレットは 0〜25 などで回しつつ、ビンゴカードは 1〜25 の数字だけを使用します。<br />
+            出た数字は履歴に残り、必要なら「この数字をルーレットから削除」で円から消せます。
+          </p>
+        </div>
+
+        <div class="card">
+          <h3>参加者</h3>
+          <p class="small">ルームに入っている人の一覧</p>
+          <ul id="playersList"></ul>
+        </div>
+
+        <div class="card">
+          <h3>ビンゴ報告</h3>
+          <p class="small">誰かビンゴしたらここに表示されます</p>
+          <ul id="bingoLog"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- プレイヤー画面 -->
+    <section id="playerSection">
+      <h2>プレイヤー画面</h2>
+      <p>
+        名前: <strong id="playerNameLabel"></strong><br />
+        ルームID: <span id="playerRoomLabel"></span><br />
+        数字範囲: <span id="playerRangeLabel"></span>
+      </p>
+      <div class="flex">
+        <div class="card">
+          <h3>あなたのビンゴカード</h3>
+          <div id="cardContainer"></div>
+        </div>
+        <div class="card">
+          <h3>進行状況</h3>
+          <p>最後に出た数字: <strong id="playerLastNumber">--</strong></p>
+          <p>状態: <strong id="playerStatus">プレイ中</strong></p>
+          <p class="small">ビンゴ判定は自動で行われ、ビンゴするとホストに通知されます。</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    let isHost = false;
+    let currentRoomId = null;
+    let myName = null;
+    let mySecretKey = null;
+
+    const CARD_SIZE = 5;
+    let cardNumbers = [];
+    let marks = [];
+    let bingoAchieved = false;
+
+    let serverDrawnNumbers = [];
+    let lastDrawnNumber = null;
+
+    const setupSection = document.getElementById("setupSection");
+    const hostSection = document.getElementById("hostSection");
+    const playerSection = document.getElementById("playerSection");
+
+    const hostRoomIdInput = document.getElementById("hostRoomId");
+    const minNumberInput = document.getElementById("minNumber");
+    const maxNumberInput = document.getElementById("maxNumber");
+    const createRoomBtn = document.getElementById("createRoomBtn");
+
+    const playerRoomIdInput = document.getElementById("playerRoomId");
+    const playerNameInput = document.getElementById("playerName");
+    const playerSecretInput = document.getElementById("playerSecret");
+    const joinRoomBtn = document.getElementById("joinRoomBtn");
+
+    const hostRoomLabel = document.getElementById("hostRoomLabel");
+    const hostRangeLabel = document.getElementById("hostRangeLabel");
+    const hostCurrentNumber = document.getElementById("hostCurrentNumber");
+    const hostDrawnList = document.getElementById("hostDrawnList");
+    const playersListEl = document.getElementById("playersList");
+    const bingoLogEl = document.getElementById("bingoLog");
+
+    const playerNameLabel = document.getElementById("playerNameLabel");
+    const playerRoomLabel = document.getElementById("playerRoomLabel");
+    const playerRangeLabel = document.getElementById("playerRangeLabel");
+    const cardContainer = document.getElementById("cardContainer");
+    const playerLastNumber = document.getElementById("playerLastNumber");
+    const playerStatus = document.getElementById("playerStatus");
+
+    const wheelCanvas = document.getElementById("wheelCanvas");
+    const wheelCtx = wheelCanvas.getContext("2d");
+    const wheelStartBtn = document.getElementById("wheelStartBtn");
+    const wheelStopBtn = document.getElementById("wheelStopBtn");
+    const wheelClearBtn = document.getElementById("wheelClearBtn");
+
+    const secretOverlay = document.getElementById("secretOverlay");
+    const secretContent = document.getElementById("secretContent");
+    const secretTitle = document.getElementById("secretTitle");
+    const secretMessage = document.getElementById("secretMessage");
+    const secretNumber = document.getElementById("secretNumber");
+
+    // ページ離脱の確認（ルーム参加中だけ）
+    window.addEventListener("beforeunload", (e) => {
+      if (!currentRoomId) return;
+      e.preventDefault();
+      e.returnValue = "";
+    });
+
+    // 前回セッションを復元（ゆるく）
+    window.addEventListener("load", () => {
+      const saved = localStorage.getItem("bingoSession");
+      if (!saved) return;
+      try {
+        const data = JSON.parse(saved);
+        if (data.role === "host") {
+          hostRoomIdInput.value = data.roomId || "";
+        } else if (data.role === "player") {
+          playerRoomIdInput.value = data.roomId || "";
+          playerNameInput.value = data.name || "";
+          if (data.secretKey) playerSecretInput.value = data.secretKey;
+        }
+      } catch (e) {
+        console.warn("bingoSession parse error", e);
+      }
+    });
+
+    // 特殊演出
+    function showSecret(num) {
+      if (!secretOverlay) return;
+
+      if (secretNumber) secretNumber.textContent = num;
+
+      let bg = "radial-gradient(circle at top, #f1c40f, #c0392b 70%, #8e44ad 100%)";
+      let titleText = `SECRET ${num}!`;
+      let messageText = "特別イベント発生！";
+
+      if (num === 0) {
+        titleText = "SECRET 0!";
+        messageText = "特別イベント発生！";
+      } else if (num === 12) {
+        titleText = "SNAKE 12!";
+        messageText = "巳年ボーナス！にょろにょろチャンス！";
+        bg = "linear-gradient(135deg, #1b5e20, #4caf50 40%, #a5d6a7 100%)";
+      } else if (num === 19) {
+        titleText = "COVID-19!?";
+        messageText = "コロナ警報！距離をとってマスク装備！";
+        bg = "radial-gradient(circle at top, #ffeb3b, #e53935 60%, #4a148c 100%)";
+      } else if (num === 21) {
+        titleText = "BLACK JACK 21!";
+        messageText = "21達成！カジノボーナス発生！？";
+        bg = "linear-gradient(135deg, #1b5e20, #2e7d32 40%, #c0a96e 100%)";
+      }
+
+      if (secretTitle) secretTitle.textContent = titleText;
+      if (secretMessage) secretMessage.textContent = messageText;
+      if (secretContent) secretContent.style.background = bg;
+
+      secretOverlay.classList.add("show");
+      setTimeout(() => {
+        secretOverlay.classList.remove("show");
+      }, 4500);
+    }
+
+    if (secretOverlay) {
+      secretOverlay.addEventListener("click", () => {
+        secretOverlay.classList.remove("show");
+      });
+    }
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function renderCardFromNumbers(cardNums) {
+      cardNumbers = cardNums.map((row) => row.slice());
+      marks = [];
+      const table = document.createElement("table");
+      table.className = "bingo-card";
+
+      for (let r = 0; r < CARD_SIZE; r++) {
+        const tr = document.createElement("tr");
+        const rowMarks = [];
+        for (let c = 0; c < CARD_SIZE; c++) {
+          const td = document.createElement("td");
+          const value = cardNumbers[r][c];
+          td.textContent = value;
+          td.dataset.row = r;
+          td.dataset.col = c;
+          tr.appendChild(td);
+          rowMarks.push(false);
+        }
+        table.appendChild(tr);
+        marks.push(rowMarks);
+      }
+
+      cardContainer.innerHTML = "";
+      cardContainer.appendChild(table);
+      bingoAchieved = false;
+      playerStatus.textContent = "プレイ中";
+    }
+
+    function generateNewCard(min, max) {
+      let cardMin = min;
+      if (cardMin === 0) cardMin = 1;
+
+      const allNums = [];
+      for (let n = cardMin; n <= max; n++) allNums.push(n);
+      shuffle(allNums);
+      const needed = CARD_SIZE * CARD_SIZE;
+      const selected = allNums.slice(0, needed);
+
+      const cardNums = [];
+      const table = document.createElement("table");
+      table.className = "bingo-card";
+
+      marks = [];
+      let idx = 0;
+      for (let r = 0; r < CARD_SIZE; r++) {
+        const tr = document.createElement("tr");
+        const rowNums = [];
+        const rowMarks = [];
+        for (let c = 0; c < CARD_SIZE; c++) {
+          const td = document.createElement("td");
+          const value = selected[idx++];
+          td.textContent = value;
+          td.dataset.row = r;
+          td.dataset.col = c;
+          tr.appendChild(td);
+          rowNums.push(value);
+          rowMarks.push(false);
+        }
+        table.appendChild(tr);
+        cardNums.push(rowNums);
+        marks.push(rowMarks);
+      }
+
+      cardContainer.innerHTML = "";
+      cardContainer.appendChild(table);
+      cardNumbers = cardNums;
+      bingoAchieved = false;
+      playerStatus.textContent = "プレイ中";
+      return cardNums;
+    }
+
+    function markNumberOnCard(num) {
+      if (!cardNumbers.length) return;
+      for (let r = 0; r < CARD_SIZE; r++) {
+        for (let c = 0; c < CARD_SIZE; c++) {
+          if (cardNumbers[r][c] === num) {
+            marks[r][c] = true;
+            const selector = `td[data-row="${r}"][data-col="${c}"]`;
+            const td = cardContainer.querySelector(selector);
+            if (td) {
+              td.classList.add("marked");
+              td.classList.add("hit-cell");
+            }
+          }
+        }
+      }
+    }
+
+    function checkBingo() {
+      for (let r = 0; r < CARD_SIZE; r++) {
+        if (marks[r].every((v) => v)) return true;
+      }
+      for (let c = 0; c < CARD_SIZE; c++) {
+        let all = true;
+        for (let r = 0; r < CARD_SIZE; r++) {
+          if (!marks[r][c]) { all = false; break; }
+        }
+        if (all) return true;
+      }
+      let diag1 = true;
+      for (let i = 0; i < CARD_SIZE; i++) {
+        if (!marks[i][i]) { diag1 = false; break; }
+      }
+      if (diag1) return true;
+      let diag2 = true;
+      for (let i = 0; i < CARD_SIZE; i++) {
+        if (!marks[i][CARD_SIZE - 1 - i]) { diag2 = false; break; }
+      }
+      if (diag2) return true;
+      return false;
+    }
+
+    function saveCardToServer(cardNums) {
+      if (!currentRoomId || !mySecretKey) return;
+      socket.emit("player:saveCard", {
+        roomId: currentRoomId,
+        secretKey: mySecretKey,
+        cardNumbers: cardNums,
+      });
+    }
+
+    // ルーレット関連
+    const wheelRadius = 160;
+    const wheelBaseSpeed = 0.55;
+    const wheelAcceleration = 0.03;
+    const wheelFriction = 0.97;
+    const wheelStopThreshold = 0.003;
+
+    let wheelRangeMin = 0;
+    let wheelRangeMax = 0;
+    let wheelAllNumbers = [];
+    let wheelRotation = 0;
+    let wheelAngularVelocity = 0;
+    let wheelIsSpinning = false;
+    let wheelIsStopping = false;
+    let wheelIsAccelerating = false;
+    let wheelDeciding = false;
+
+    function initWheelRange(min, max) {
+      wheelRangeMin = min;
+      wheelRangeMax = max;
+      wheelAllNumbers = [];
+      for (let n = min; n <= max; n++) wheelAllNumbers.push(n);
+      wheelRotation = 0;
+      wheelAngularVelocity = 0;
+      wheelIsSpinning = false;
+      wheelIsStopping = false;
+      wheelIsAccelerating = false;
+      wheelDeciding = false;
+    }
+
+    function countActiveNumbers() {
+      return wheelAllNumbers.filter((n) => !serverDrawnNumbers.includes(n)).length;
+    }
+
+    function wheelDraw() {
+      const w = wheelCanvas.width;
+      const h = wheelCanvas.height;
+      wheelCtx.clearRect(0, 0, w, h);
+
+      const centerX = w / 2;
+      const centerY = h / 2;
+      const nums = wheelAllNumbers;
+
+      if (!nums || nums.length === 0) {
+        wheelCtx.save();
+        wheelCtx.translate(centerX, centerY);
+        wheelCtx.fillStyle = "#f5f5f5";
+        wheelCtx.font = "16px sans-serif";
+        wheelCtx.textAlign = "center";
+        wheelCtx.textBaseline = "middle";
+        wheelCtx.fillText("ルーム作成後に使用 / またはすべて消えました", 0, 0);
+        wheelCtx.restore();
+      } else {
+        const count = nums.length;
+        const step = (Math.PI * 2) / count;
+
+        wheelCtx.save();
+        wheelCtx.translate(centerX, centerY);
+        wheelCtx.rotate(wheelRotation);
+
+        for (let i = 0; i < count; i++) {
+          const startAngle = -Math.PI / 2 + i * step;
+          const endAngle = startAngle + step;
+          const value = nums[i];
+          const used = serverDrawnNumbers.includes(value);
+
+          wheelCtx.beginPath();
+          wheelCtx.moveTo(0, 0);
+          wheelCtx.arc(0, 0, wheelRadius, startAngle, endAngle);
+          wheelCtx.closePath();
+
+          if (used) {
+            wheelCtx.fillStyle = "#555";
+          } else {
+            const isRed = i % 2 === 0;
+            wheelCtx.fillStyle = isRed ? "#c0392b" : "#222";
+          }
+          wheelCtx.fill();
+          wheelCtx.strokeStyle = "#000";
+          wheelCtx.stroke();
+
+          const textAngle = startAngle + step / 2;
+          const textRadius = wheelRadius * 0.78;
+          const x = Math.cos(textAngle) * textRadius;
+          const y = Math.sin(textAngle) * textRadius;
+
+          wheelCtx.save();
+          wheelCtx.translate(x, y);
+          wheelCtx.rotate(textAngle + Math.PI / 2);
+          wheelCtx.fillStyle = "#fff";
+          wheelCtx.font = "14px sans-serif";
+          wheelCtx.textAlign = "center";
+          wheelCtx.textBaseline = "middle";
+          wheelCtx.fillText(String(value), 0, 0);
+          wheelCtx.restore();
+        }
+        wheelCtx.restore();
+      }
+
+      wheelCtx.save();
+      wheelCtx.translate(centerX, centerY);
+      wheelCtx.beginPath();
+      wheelCtx.moveTo(0, -wheelRadius - 8);
+      wheelCtx.lineTo(-20, -wheelRadius - 55);
+      wheelCtx.lineTo(20, -wheelRadius - 55);
+      wheelCtx.closePath();
+      wheelCtx.fillStyle = "#f1c40f";
+      wheelCtx.fill();
+      wheelCtx.restore();
+    }
+
+    function wheelSendNumberToServer(num) {
+      if (!isHost || !currentRoomId) return;
+      socket.emit("host:drawNumber", { roomId: currentRoomId, number: num }, (res) => {
+        if (!res || !res.ok) {
+          alert(res && res.message ? res.message : "数字の送信に失敗しました");
+        }
+      });
+    }
+
+    function wheelDecideWinner() {
+      const nums = wheelAllNumbers;
+      if (!nums || nums.length === 0) return;
+
+      const activeIndexes = [];
+      for (let i = 0; i < nums.length; i++) {
+        if (!serverDrawnNumbers.includes(nums[i])) activeIndexes.push(i);
+      }
+      if (activeIndexes.length === 0) return;
+
+      const count = nums.length;
+      const step = (Math.PI * 2) / count;
+      const pointerDirection = -Math.PI / 2;
+
+      let bestIndex = activeIndexes[0];
+      let minDiff = Infinity;
+
+      for (const i of activeIndexes) {
+        const centerAngle = -Math.PI / 2 + (i + 0.5) * step + wheelRotation;
+        const diff = Math.atan2(
+          Math.sin(centerAngle - pointerDirection),
+          Math.cos(centerAngle - pointerDirection)
+        );
+        const absDiff = Math.abs(diff);
+        if (absDiff < minDiff) {
+          minDiff = absDiff;
+          bestIndex = i;
+        }
+      }
+
+      const winningNumber = nums[bestIndex];
+      wheelSendNumberToServer(winningNumber);
+    }
+
+    function wheelAnimate() {
+      if (wheelIsSpinning || wheelIsStopping || wheelIsAccelerating) {
+        if (wheelIsAccelerating) {
+          wheelAngularVelocity += wheelAcceleration;
+          if (wheelAngularVelocity >= wheelBaseSpeed) {
+            wheelAngularVelocity = wheelBaseSpeed;
+            wheelIsAccelerating = false;
+          }
+        }
+        if (wheelIsStopping) {
+          wheelAngularVelocity *= wheelFriction;
+          if (Math.abs(wheelAngularVelocity) < wheelStopThreshold) {
+            wheelAngularVelocity = 0;
+            wheelIsStopping = false;
+            wheelIsSpinning = false;
+            if (!wheelDeciding) {
+              wheelDeciding = true;
+              wheelDecideWinner();
+            }
+          }
+        }
+
+        wheelRotation += wheelAngularVelocity;
+        const twoPi = Math.PI * 2;
+        if (wheelRotation > twoPi || wheelRotation < -twoPi) {
+          wheelRotation = wheelRotation % twoPi;
+        }
+      }
+
+      wheelDraw();
+      requestAnimationFrame(wheelAnimate);
+    }
+    wheelAnimate();
+
+    // ホスト：ルーム作成 / 再参加
+    createRoomBtn.addEventListener("click", () => {
+      const roomId = hostRoomIdInput.value.trim();
+      const minNum = Number(minNumberInput.value);
+      const maxNum = Number(maxNumberInput.value);
+
+      socket.emit(
+        "host:createRoom",
+        { roomId, minNumber: minNum, maxNumber: maxNum },
+        (res) => {
+          if (!res || !res.ok) {
+            alert(res && res.message ? res.message : "ルーム作成に失敗しました");
+            return;
+          }
+          isHost = true;
+          currentRoomId = res.room.roomId;
+          serverDrawnNumbers = res.room.drawnNumbers || [];
+          lastDrawnNumber =
+            serverDrawnNumbers.length
+              ? serverDrawnNumbers[serverDrawnNumbers.length - 1]
+              : null;
+
+          hostRoomLabel.textContent = res.room.roomId;
+          hostRangeLabel.textContent = `${res.room.minNumber}〜${res.room.maxNumber}`;
+
+          // 🔹 再参加かどうかで表示を変える
+          if (res.rejoin) {
+            hostCurrentNumber.textContent =
+              lastDrawnNumber != null ? lastDrawnNumber : "--";
+            hostDrawnList.textContent =
+              serverDrawnNumbers.length
+                ? serverDrawnNumbers.join(", ")
+                : "まだありません";
+          } else {
+            hostCurrentNumber.textContent = "--";
+            hostDrawnList.textContent = "まだありません";
+          }
+
+          playersListEl.innerHTML = "";
+          bingoLogEl.innerHTML = "";
+
+          initWheelRange(res.room.minNumber, res.room.maxNumber);
+
+          setupSection.style.display = "none";
+          hostSection.style.display = "block";
+          playerSection.style.display = "none";
+
+          try {
+            localStorage.setItem(
+              "bingoSession",
+              JSON.stringify({
+                role: "host",
+                roomId: currentRoomId,
+              })
+            );
+          } catch (e) {}
+        }
+      );
+    });
+
+    // プレイヤー：参加
+    joinRoomBtn.addEventListener("click", () => {
+      const roomId = playerRoomIdInput.value.trim();
+      const name = playerNameInput.value.trim();
+      const secretKeyInput = playerSecretInput.value.trim();
+
+      socket.emit(
+        "player:joinRoom",
+        { roomId, name, secretKey: secretKeyInput },
+        (res) => {
+          if (!res || !res.ok) {
+            alert(res && res.message ? res.message : "ルーム参加に失敗しました");
+            return;
+          }
+          isHost = false;
+          currentRoomId = res.room.roomId;
+          myName = res.name;
+          mySecretKey = res.secretKey;
+          playerSecretInput.value = mySecretKey;
+
+          serverDrawnNumbers = res.room.drawnNumbers || [];
+          lastDrawnNumber =
+            serverDrawnNumbers.length
+              ? serverDrawnNumbers[serverDrawnNumbers.length - 1]
+              : null;
+
+          playerNameLabel.textContent = myName;
+          playerRoomLabel.textContent = currentRoomId;
+          playerRangeLabel.textContent =
+            `${res.room.minNumber}〜${res.room.maxNumber}`;
+          playerLastNumber.textContent =
+            lastDrawnNumber != null ? lastDrawnNumber : "--";
+          playerStatus.textContent = "プレイ中";
+
+          if (res.cardNumbers && res.cardNumbers.length === CARD_SIZE) {
+            renderCardFromNumbers(res.cardNumbers);
+          } else {
+            const nums = generateNewCard(res.room.minNumber, res.room.maxNumber);
+            saveCardToServer(nums);
+          }
+
+          serverDrawnNumbers.forEach((n) => {
+            if (n !== 0) markNumberOnCard(n);
+          });
+          if (checkBingo()) {
+            bingoAchieved = true;
+            playerStatus.textContent = "ビンゴ！";
+            socket.emit("player:bingo", { roomId: currentRoomId, name: myName });
+          }
+
+          setupSection.style.display = "none";
+          hostSection.style.display = "none";
+          playerSection.style.display = "block";
+
+          try {
+            localStorage.setItem(
+              "bingoSession",
+              JSON.stringify({
+                role: "player",
+                roomId: currentRoomId,
+                name: myName,
+                secretKey: mySecretKey,
+              })
+            );
+          } catch (e) {}
+        }
+      );
+    });
+
+    // ホスト：ルーレット操作
+    wheelStartBtn.addEventListener("click", () => {
+      if (!isHost) return;
+      if (!currentRoomId) {
+        alert("先にルームを作成してください");
+        return;
+      }
+      if (countActiveNumbers() === 0) {
+        alert("すべての数字が出ています");
+        return;
+      }
+      if (wheelIsSpinning || wheelIsStopping || wheelIsAccelerating) return;
+
+      wheelAngularVelocity = 0;
+      wheelIsSpinning = true;
+      wheelIsStopping = false;
+      wheelIsAccelerating = true;
+      wheelDeciding = false;
+    });
+
+    wheelStopBtn.addEventListener("click", () => {
+      if (!isHost) return;
+      if (!wheelIsSpinning && !wheelIsAccelerating) return;
+      wheelIsStopping = true;
+      wheelIsAccelerating = false;
+    });
+
+    wheelClearBtn.addEventListener("click", () => {
+      if (!isHost) return;
+      if (lastDrawnNumber == null) return;
+      wheelAllNumbers = wheelAllNumbers.filter((n) => n !== lastDrawnNumber);
+    });
+
+    // サーバーから：数字が出た
+    socket.on("number:drawn", (data) => {
+      const { number, drawnNumbers } = data;
+      serverDrawnNumbers = drawnNumbers || [];
+      lastDrawnNumber = number;
+
+      if (number === 0 || number === 12 || number === 19 || number === 21) {
+        showSecret(number);
+      }
+
+      if (isHost) {
+        hostCurrentNumber.textContent = number;
+        hostCurrentNumber.classList.remove("highlight-number");
+        void hostCurrentNumber.offsetWidth;
+        hostCurrentNumber.classList.add("highlight-number");
+
+        hostDrawnList.textContent = serverDrawnNumbers.join(", ");
+      } else {
+        playerLastNumber.textContent = number;
+        playerLastNumber.classList.remove("highlight-number");
+        void playerLastNumber.offsetWidth;
+        playerLastNumber.classList.add("highlight-number");
+
+        if (number !== 0) {
+          markNumberOnCard(number);
+          if (!bingoAchieved && checkBingo()) {
+            bingoAchieved = true;
+            playerStatus.textContent = "ビンゴ！";
+            socket.emit("player:bingo", { roomId: currentRoomId, name: myName });
+          }
+        }
+      }
+    });
+
+    // ホスト：参加者リスト更新
+    socket.on("room:playersUpdate", (players) => {
+      if (!isHost) return;
+      playersListEl.innerHTML = "";
+      players.forEach((name) => {
+        const li = document.createElement("li");
+        li.textContent = name;
+        playersListEl.appendChild(li);
+      });
+    });
+
+    // ホスト：誰かビンゴ
+    socket.on("player:bingo", (data) => {
+      if (!isHost) return;
+      const li = document.createElement("li");
+      li.textContent = `${data.name} さんがビンゴ！`;
+      bingoLogEl.appendChild(li);
+    });
+
+    // room:ended は今はサーバーから飛ばしていないが、
+    // 将来「完全に終了」ボタンを作ったとき用に残しておく
+    socket.on("room:ended", () => {
+      alert("このルームは終了しました。");
+      location.reload();
+    });
+  </script>
+</body>
+</html>
